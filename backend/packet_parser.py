@@ -1,127 +1,65 @@
-from scapy.all import rdpcap
+from scapy.all import IP, TCP, UDP, ICMP, ARP
+from loguru import logger
+from backend.threat_detector import detect_arp_spoofing, detect_icmp_anomalies, detect_suspicious_ip_activity, detect_syn_scan, detect_unencrypted_traffic
+from datetime import datetime
 
-def load_file(file_path):
-    packets = rdpcap(file_path)
-    return packets
+def process_packets(packet):
+    threats = []
 
-def process_packets(packets):
-    all_http_packets = []
-    all_tcp_udp_packets = []
-    all_arp_packets = []
-    all_icmp_packets = []
+    unencrypted_traffic = detect_unencrypted_traffic(packet)
+    if unencrypted_traffic:
+        threats.append(f"SECURITY ALERT | Unencrypted traffic detected: {', '.join(unencrypted_traffic)}")
 
-    for packet in packets:
-        if packet.haslayer("HTTP"):
-            all_http_packets.append(extract_http_packets(packet))
-        elif packet.haslayer("TCP") or packet.haslayer("UDP"):
-            all_tcp_udp_packets.append(extract_tcp_udp_packets(packet))
-        elif packet.haslayer("ARP"):
-            all_arp_packets.append(extract_arp_packets(packet))
-        elif packet.haslayer("ICMP"):
-            all_icmp_packets.append(extract_icmp_packets(packet))
+    syn_scan = detect_syn_scan(packet)
+    if syn_scan:
+        threats.append(f"SECURITY ALERT | {syn_scan}")
 
-    return {
-        "http": all_http_packets,
-        "tcp_udp": all_tcp_udp_packets,
-        "arp": all_arp_packets,
-        "icmp": all_icmp_packets
-    }
+    suspicious_ip = detect_suspicious_ip_activity(packet)
+    if suspicious_ip:
+        threats.append(f"SECURITY ALERT | {suspicious_ip}")
 
+    arp_spoof = detect_arp_spoofing(packet)
+    if arp_spoof:
+        threats.append(f"SECURITY ALERT | {arp_spoof}")
 
-def extract_http_packets(packet):
+    icmp_anomaly = detect_icmp_anomalies(packet)
+    if icmp_anomaly:
+        threats.append(f"SECURITY ALERT | {icmp_anomaly}")
 
-    http_packets = []
-    
-    if packet.haslayer("IP") and packet.haslayer("TCP"):
-        if packet["TCP"].dport == 80 or packet["TCP"].sport == 80:
-            src_ip = packet["IP"].src
-            dst_ip = packet["IP"].dst
-            payload = packet["TCP"].payload.decode(errors="ignore")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            method = None
-            for m in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
-                if m in payload:
-                    method = m
-                    break
+    if packet.haslayer(IP):
+        src_ip = packet[IP].src
+        dst_ip = packet[IP].dst
+    else:
+        src_ip = "N/A"
+        dst_ip = "N/A"
 
-            host = None
-            if "Host:" in payload:
-                try:
-                    host = payload.split("Host: ")[1].split("\r\n")[0]
-                except IndexError:
-                    pass
+    if packet.haslayer(TCP):
+        src_port = packet[TCP].sport
+        dst_port = packet[TCP].dport
+        log_message = f"{timestamp} | TCP | Src IP: {src_ip}, Dst IP: {dst_ip}, Src Port: {src_port}, Dst Port: {dst_port}"
+        logger.info(log_message)
+        print(log_message)
 
-            http_info = {
-                "src_ip": src_ip,
-                "dst_ip": dst_ip,
-                "method": method,
-                "host": host,
-                "payload": payload[:100] if len(payload) > 100 else payload
-            }
-            http_packets.append(http_info)
+    elif packet.haslayer(UDP):
+        src_port = packet[UDP].sport
+        dst_port = packet[UDP].dport
+        log_message = f"{timestamp} | UDP | Src IP: {src_ip}, Dst IP: {dst_ip}, Src Port: {src_port}, Dst Port: {dst_port}"
+        logger.info(log_message)
+        print(log_message)
 
-    return http_packets
+    elif packet.haslayer(ICMP):
+        log_message = f"{timestamp} | ICMP | Src IP: {src_ip}, Dst IP: {dst_ip}"
+        logger.info(log_message)
+        print(log_message)
 
-def extract_tcp_udp_packets(packet):
+    elif packet.haslayer(ARP):
+        src_mac = packet[ARP].hwsrc
+        dst_mac = packet[ARP].hwdst
+        log_message = f"{timestamp} | ARP | Src IP: {src_ip}, Dst IP: {dst_ip}, Src MAC: {src_mac}, Dst MAC: {dst_mac}"
+        logger.info(log_message)
+        print(log_message)
 
-    packets = []
+    return threats
 
-    if packet.haslayer("IP") and (packet.haslayer("TCP") or packet.haslayer("UDP")):
-        src_ip = packet["IP"].src
-        dst_ip = packet["IP"].dst
-        payload = str(packet["TCP"].payload) if packet.haslayer("TCP") else str(packet["UDP"].payload)
-        protocol = "TCP" if packet.haslayer("TCP") else "UDP"
-        src_port = packet["TCP"].sport if packet.haslayer("TCP") else packet["UDP"].sport
-        dst_port = packet["TCP"].dport if packet.haslayer("TCP") else packet["UDP"].dport
-
-        packet_info = {
-            "protocol": protocol,
-            "src_ip": src_ip,
-            "dst_ip": dst_ip,
-            "src_port": src_port,
-            "dst_port": dst_port,
-            "payload": payload[:100] if len(payload) > 100 else payload
-        }
-        packets.append(packet_info)
-
-    return packets
-
-def extract_arp_packets(packet):
-
-    arp_packets = []
-
-    if packet.haslayer("ARP"):
-        src_ip = packet["ARP"].psrc
-        dst_ip = packet["ARP"].pdst
-        src_mac = packet["ARP"].hwsrc
-        dst_mac = packet["ARP"].hwdst
-
-        arp_info = {
-            "src_ip": src_ip,
-            "dst_ip": dst_ip,
-            "src_mac": src_mac,
-            "dst_mac": dst_mac
-        }
-        arp_packets.append(arp_info)
-
-    return arp_packets
-
-def extract_icmp_packets(packet):
-
-    icmp_packets = []
-
-    if packet.haslayer("ICMP"):
-        src_ip = packet["IP"].src
-        dst_ip = packet["IP"].dst
-        icmp_type = packet["ICMP"].type
-        icmp_code = packet["ICMP"].code
-
-        icmp_info = {
-            "src_ip": src_ip,
-            "dst_ip": dst_ip,
-            "icmp_type": icmp_type,
-            "icmp_code": icmp_code
-        }
-        icmp_packets.append(icmp_info)
-
-    return icmp_packets
