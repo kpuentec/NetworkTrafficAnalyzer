@@ -8,7 +8,7 @@ def process_packets(packet):
 
     unencrypted_traffic = detect_unencrypted_traffic(packet)
     if unencrypted_traffic:
-        threats.append(f"SECURITY ALERT | Unencrypted traffic detected: {', '.join(unencrypted_traffic)}")
+        threats.append(f"SECURITY ALERT | Unencrypted traffic detected: {unencrypted_traffic}")
 
     syn_scan = detect_syn_scan(packet)
     if syn_scan:
@@ -62,4 +62,3 @@ def process_packets(packet):
         print(log_message)
 
     return threats
-

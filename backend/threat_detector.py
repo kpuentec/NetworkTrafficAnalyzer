@@ -4,6 +4,7 @@ from scapy.all import IP, TCP, ICMP, ARP
 ip_activity = defaultdict(int)
 mac_to_ip = defaultdict(list)
 icmp_packets = defaultdict(int)
+event_count = defaultdict(int)
 
 SYN_SCAN_THRESHOLD = 10
 SUSPICIOUS_IP_THRESHOLD = 100
@@ -19,15 +20,19 @@ def detect_unencrypted_traffic(packet):
         if packet[TCP].dport in UNENCRYPTED_PORTS or packet[TCP].sport in UNENCRYPTED_PORTS:
             protocol = "FTP" if packet[TCP].dport == 21 else "Telnet" if packet[TCP].dport == 23 else "HTTP"
             unencrypted_protocols.append(protocol)
+
+            event_count["unencrypted_traffic"] += 1
+            return f"Unencrypted traffic detected: (Event count: {event_count['unencrypted_traffic']})"
     
-    return unencrypted_protocols
+    return None
 
 def detect_syn_scan(packet):
     if packet.haslayer(TCP) and packet[TCP].flags == "S":
         src_ip = packet[IP].src
         ip_activity[src_ip] += 1
         if ip_activity[src_ip] > SYN_SCAN_THRESHOLD:
-            return f"SYN scan detected from {src_ip}"
+            event_count["syn_scan"] += 1
+            return f"SYN scan detected from {src_ip} (Event count: {event_count['syn_scan']})"
     return None
 
 def detect_suspicious_ip_activity(packet):
@@ -35,7 +40,8 @@ def detect_suspicious_ip_activity(packet):
         src_ip = packet[IP].src
         ip_activity[src_ip] += 1
         if ip_activity[src_ip] > SUSPICIOUS_IP_THRESHOLD:
-            return f"Suspicious IP activity detected from {src_ip}"
+            event_count["suspicious_ip"] += 1
+            return f"Suspicious IP activity detected from {src_ip} (Event count: {event_count['suspicious_ip']})"
     return None
 
 def detect_arp_spoofing(packet):
@@ -45,7 +51,8 @@ def detect_arp_spoofing(packet):
         mac_to_ip[ip].append(mac)
 
         if len(set(mac_to_ip[ip])) > ARP_SPOOF_THRESHOLD:
-            return f"ARP spoofing detected for IP {ip}"
+            event_count["arp_spoofing"] += 1
+            return f"ARP spoofing detected for IP {ip} (Event count: {event_count['arp_spoofing']})"
     return None
 
 def detect_icmp_anomalies(packet):
@@ -59,5 +66,6 @@ def detect_icmp_anomalies(packet):
 
         icmp_packets[src_ip] += 1
         if icmp_packets[src_ip] > SYN_SCAN_THRESHOLD:
-            return f"ICMP flood detected from {src_ip}"
+            event_count["icmp_flood"] += 1
+            return f"ICMP flood detected from {src_ip} (Event count: {event_count['icmp_flood']})"
     return None
