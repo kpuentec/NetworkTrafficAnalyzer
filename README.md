@@ -20,6 +20,8 @@ Requirements:
 
 Install Python3 onto your system(If you don't have it already).
 
+Install Wireshark to create .pcapng files that contain network traffic data to be analyzed.
+
 Install:
 
 1. Clone repository:
