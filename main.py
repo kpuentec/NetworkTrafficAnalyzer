@@ -1,22 +1,42 @@
-import sys
-from backend.packet_parser import load_file, process_packets
-from backend.threat_detector import analyze_packet
+from loguru import logger
+from backend.packet_parser import process_packets
+from config import PCAPNG
+from scapy.all import rdpcap
 
-def main(file_path):
-    print(f"Loading .pcapng file: {file_path}")
-    packets = load_file(file_path)
-    
-    print("Processing packets:")
-    categorized_packets = process_packets(packets)
 
-    print("Analyzing packets for security threats:")
+def logger_setup():
+    logger.add("security.log", format="{level} | {message}", rotation="1 MB", compression="zip")
+    print("Logger has been set up to write security logs")
+
+def main():
+    pcap_file = PCAPNG
+
+    try:
+        packets = rdpcap(pcap_file)
+    except FileNotFoundError:
+        print(f"Error: The PCAPNG file '{pcap_file}' was not found.")
+        return
+
     all_threats = []
-    for packet_category, packets in categorized_packets.items():
-        for packet in packets:
-            threats = analyze_packet(packet)
-            if threats:
-                all_threats.extend(threats)
+    print("Processing packets...")
 
+    for packet in packets:
+        print(f"Analyzing packet: {packet.summary()}")
+        threats = process_packets(packet)
+        all_threats.extend(threats)
+
+        for threat in threats:
+            logger.info(threat)
+
+    print("\nDetected security threats:")
+    if all_threats:
+        for threat in all_threats:
+            print(threat)
+            logger.info(threat)
+    else:
+        print("No security threats detected.")
+        logger.info("No security threats detected.")
 
 if __name__ == "__main__":
-    main(sys.arg[1])
+    logger_setup()
+    main()

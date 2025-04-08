@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-security.log
-__pycache__/
-=======
 venv/
-__pycache__/
-*/__pycache__
 security.log
->>>>>>> 6c3ffbd55cd1b33913e00e6737eb255b52516ce5
+__pycache__/
 *.pcapng
