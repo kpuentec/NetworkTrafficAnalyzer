@@ -1,6 +1,6 @@
 # NetworkTrafficAnalyzer
 
-NetworkTrafficAnalyzer is a Python-based tool designed to analyze network traffic from `.pcapng` files captured with Wireshark. It helps detect various security threats, including unencrypted traffic, SYN scans, suspicious IP activity, ARP spoofing, and ICMP anomalies. The tool uses the Scapy library for packet analysis and Loguru for logging detected threats.
+NetworkTrafficAnalyzer is a Python-based tool designed to analyze network traffic from `.pcapng` files captured with Wireshark. It helps detect various security threats, including unencrypted traffic, SYN scans, suspicious IP activity, ARP spoofing, and ICMP anomalies. The tool uses the Scapy library for packet analysis and Loguru for logging detected threats. Ddetection thresholds in the Network Traffic Analyzer are fully configurable, so you can tailor the sensitivity to better fit your specific use case or network environment.
 
 Features:
 
@@ -43,6 +43,16 @@ Run:
 * Modify variable in config.py to the name of your .pcapng file.
   
 * Run python main.py
+
+* Edit threat_detector.py variables and adjust them depending on how aggressive or lenient you'd like the threat detector to be.
+
+           SYN_SCAN_THRESHOLD = 10
+           SUSPICIOUS_IP_THRESHOLD = 100
+           ICMP_PAYLOAD_THRESHOLD = 1000
+           ARP_SPOOF_THRESHOLD = 1
+           DNS_QUERY_THRESHOLD = 50
+           UNENCRYPTED_PORTS = [80, 21, 23]
+
 
 Structure:
 
