@@ -28,9 +28,9 @@ Install:
 
          git clone https://github.com/kpuentec/NetworkTrafficAnalyzer.git
 
-4. Navigate to the project directory: cd NetworkTrafficAnalyzer
+2. Navigate to the project directory: cd NetworkTrafficAnalyzer
 
-5. Install requirements:
+3. Install requirements:
 
          pip install -r requirements.txt
 
