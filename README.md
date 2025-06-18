@@ -36,7 +36,7 @@ Install:
 
 Run:
 
-* Navigate to the root directory, cd NetwrokTrafficAnalyzer
+* Navigate to the root directory, cd NetworkTrafficAnalyzer
   
 * Upload your .pcapng file in the root folder
   
